@@ -46,15 +46,18 @@ def makeVocabulary(filename, trun_length, filter_length, char, vocab, size):
 
     print("%s: length limit = %d, truncate length = %d" % (filename, filter_length, trun_length))
     max_length = 0
+    # codecs.open() 讀取文件內容會自動轉換為內部的unicode， python2.x的方法
     with codecs.open(filename, 'r', 'utf-8') as f:
         for sent in f.readlines():
             if char:
                 tokens = list(sent.strip())
             else:
                 tokens = sent.strip().split()
+            # filter預設為0此行不會成立，若小於設定的filter_length，不會將此sentence放入字典
             if 0 < filter_length < len(sent.strip().split()):
                 continue
             max_length = max(max_length, len(tokens))
+            # sentence 的長度超過trun_length，只儲存範圍內的
             if trun_length > 0:
                 tokens = tokens[:trun_length]
             for word in tokens:
@@ -114,13 +117,15 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, l
         sline = sline.lower()
         tline = tline.lower()
 
+        #opt.src_char是true，則回傳整個list(sline)
         srcWords = sline.split() if not opt.src_char else list(sline)
         tgtWords = tline.split() if not opt.tgt_char else list(tline)
 
-
+        #如果sentence的長度小於短於要過濾的長度
         if (opt.src_filter == 0 or len(sline.split()) <= opt.src_filter) and \
            (opt.tgt_filter == 0 or len(tline.split()) <= opt.tgt_filter):
 
+            #如果有設定斷字的長度，進行斷自處理
             if opt.src_trun > 0:
                 srcWords = srcWords[:opt.src_trun]
             if opt.tgt_trun > 0:
@@ -131,6 +136,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, save_srcFile, save_tgtFile, l
 
             srcIdF.write(" ".join(list(map(str, srcIds)))+'\n')
             tgtIdF.write(" ".join(list(map(str, tgtIds)))+'\n')
+            #如果不是char，word之間會加空格
             if not opt.src_char:
                 srcStrF.write(" ".join(srcWords)+'\n')
             else:
@@ -184,11 +190,13 @@ def main():
     if opt.share:
         assert opt.src_vocab_size == opt.tgt_vocab_size
         print('Building source and target vocabulary...')
+        #將'src'和'tgt'直接訂為一整個資料的的key
         dicts['src'] = dicts['tgt'] = utils.Dict([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
         dicts['src'] = makeVocabulary(train_src, opt.src_trun, opt.src_filter, opt.src_char, dicts['src'], opt.src_vocab_size)
         dicts['src'] = dicts['tgt'] = makeVocabulary(train_tgt, opt.tgt_trun, opt.tgt_filter, opt.tgt_char, dicts['tgt'], opt.tgt_vocab_size)
     else:
         print('Building source vocabulary...')
+        #將PAD, UNK, BOS, EOS 先依序(0,1,2,3)放入字典中
         dicts['src'] = utils.Dict([utils.PAD_WORD, utils.UNK_WORD, utils.BOS_WORD, utils.EOS_WORD])
         dicts['src'] = makeVocabulary(train_src, opt.src_trun, opt.src_filter, opt.src_char, dicts['src'], opt.src_vocab_size)
         print('Building target vocabulary...')

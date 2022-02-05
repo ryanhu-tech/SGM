@@ -42,6 +42,7 @@ class Dict(object):
     def writeFile(self, filename):
         with open(filename, 'w') as file:
             for i in range(self.size()):
+                #idxToLabel在makeVocabulary()中已經加入
                 label = self.idxToLabel[i]
                 file.write('%s %d\n' % (label, i))
 
@@ -78,17 +79,19 @@ class Dict(object):
     # Add `label` in the dictionary. Use `idx` as its index if given.
     def add(self, label, idx=None):
         label = label.lower() if self.lower else label
+        #同時產生idx與label對換的兩種字典
         if idx is not None:
             self.idxToLabel[idx] = label
             self.labelToIdx[label] = idx
         else:
             if label in self.labelToIdx:
                 idx = self.labelToIdx[label]
-            else:
+            else: #初始創建時會走這條路線
                 idx = len(self.idxToLabel)
                 self.idxToLabel[idx] = label
                 self.labelToIdx[label] = idx
 
+        #計算單字出現頻率
         if idx not in self.frequencies:
             self.frequencies[idx] = 1
         else:

@@ -43,13 +43,25 @@ class luong_gate_attention(nn.Module):
     def init_context(self, context):
         self.context = context.transpose(0, 1)
 
+    #h=[batch, hidden_size]
     def forward(self, h):
+        #[batch, hidden_size]->[batch, hidden_size,1]
+        #unsqueeze(2)，表示在第二個維度增加一個維度
+        # 公式(4)的U_a*h_i
         gamma_h = self.linear_in(h).unsqueeze(2)
+        #context=[batch_size, max_src_len, hidden_size]
+        #bbm後轉成[batch_size, max_src_len, 1]
+        #squeeze(2)->[batch_size, max_src_len]
+        #公式(4)
         weights = self.dropout(torch.bmm(self.context, gamma_h).squeeze(2))
+        #公式(5)
         weights = self.softmax(weights)
+        #公式(6)
+        #[batch_size, max_src_len,1]*[batch_size, max_src_len, hidden_size]
+        #bmm後[batch_size,hidden_size]
         c_t = torch.bmm(weights.unsqueeze(1), self.context).squeeze(1)
         output = self.linear_out(torch.cat([h, c_t], 1))
-
+        #output=[batch, hidden_size], weights=[batch_size, max_src_len]
         return output, weights
 
 

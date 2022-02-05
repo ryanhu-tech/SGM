@@ -6,7 +6,7 @@ import utils
 
 num_samples = 1
 
-
+#只有src的資料
 class MonoDataset(torch_data.Dataset):
 
     def __init__(self, infos, indexes=None):
@@ -30,7 +30,7 @@ class MonoDataset(torch_data.Dataset):
     def __len__(self):
         return len(self.indexes)
 
-
+#存有src及tgt兩種資料
 class BiDataset(torch_data.Dataset):
 
     def __init__(self, infos, indexes=None, char=False):
@@ -49,6 +49,7 @@ class BiDataset(torch_data.Dataset):
 
     def __getitem__(self, index):
         index = self.indexes[index]
+        # map可以對每個iterable的元素做轉換，此處是轉為int
         src = list(map(int, linecache.getline(self.srcF, index+1).strip().split()))
         tgt = list(map(int, linecache.getline(self.tgtF, index+1).strip().split()))
         original_src = linecache.getline(self.original_srcF, index+1).strip().split()
@@ -79,22 +80,24 @@ def splitDataset(data_set, sizes):
 
 def padding(data):
     src, tgt, original_src, original_tgt = zip(*data)
-
+    # 把每個batch中的句子長度都存出來
     src_len = [len(s) for s in src]
+    #產生此batch中所有資料及長度為最大src_len的對應tensor，其值都是0
     src_pad = torch.zeros(len(src), max(src_len)).long()
+    #src是dict型態, enumerate dict返回的是counter 及 key
     for i, s in enumerate(src):
-        end = src_len[i]
-        src_pad[i, :end] = torch.LongTensor(s[end-1::-1])
+        end = src_len[i] #回傳每個句子的原本長度
+        src_pad[i, :end] = torch.LongTensor(s[end-1::-1]) #把資料以倒序的方法切片存入
 
     tgt_len = [len(s) for s in tgt]
     tgt_pad = torch.zeros(len(tgt), max(tgt_len)).long()
     for i, s in enumerate(tgt):
         end = tgt_len[i]
-        tgt_pad[i, :end] = torch.LongTensor(s)[:end]
+        tgt_pad[i, :end] = torch.LongTensor(s)[:end] #以正序的方式存入
 
     return src_pad, tgt_pad, \
            torch.LongTensor(src_len), torch.LongTensor(tgt_len), \
-           original_src, original_tgt
+           original_src, original_tgt # 把src的長度資料存成為tensor
 
 
 def ae_padding(data):

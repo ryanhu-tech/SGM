@@ -25,6 +25,7 @@ config = utils.read_config(opt.config)
 torch.manual_seed(opt.seed)
 random.seed(opt.seed)
 np.random.seed(opt.seed)
+#把opt新增的config加入到config
 opts.convert_to_config(opt, config)
 
 # cuda
@@ -42,6 +43,7 @@ with codecs.open(opt.label_dict_file, 'r', 'utf-8') as f:
 def load_data():
     print('loading data...\n')
     data = pickle.load(open(config.data+'data.pkl', 'rb'))
+    #opt.scale可以決定要多少百分比的訓練資料，預設為1
     data['train']['length'] = int(data['train']['length'] * opt.scale)
 
     trainset = utils.BiDataset(data['train'], char=config.char)
@@ -52,6 +54,7 @@ def load_data():
     config.src_vocab_size = src_vocab.size()
     config.tgt_vocab_size = tgt_vocab.size()
 
+    #有下列四種資料[src, tgt, original_src, original_tgt]
     trainloader = torch.utils.data.DataLoader(dataset=trainset,
                                               batch_size=config.batch_size,
                                               shuffle=True,
@@ -125,12 +128,14 @@ def train_model(model, data, optim, epoch, params):
             src = src.cuda()
             tgt = tgt.cuda()
             src_len = src_len.cuda()
-
+        #A tuple of (sorted_tensor, sorted_indices) is returned,
+        #where the sorted_indices are the indices of the elements in the original input tensor.
         lengths, indices = torch.sort(src_len, dim=0, descending=True)
+        #將src依照句子的長度，由長到短排列，此時src是tensor了嗎?
         src = torch.index_select(src, dim=0, index=indices)
         tgt = torch.index_select(tgt, dim=0, index=indices)
-        dec = tgt[:, :-1]
-        targets = tgt[:, 1:]
+        dec = tgt[:, :-1] #捨棄最後一個字，去掉預設的EOS
+        targets = tgt[:, 1:] #捨棄第0個字，去掉預設的BOS
 
         try:
             if config.schesamp:
@@ -141,7 +146,7 @@ def train_model(model, data, optim, epoch, params):
                     loss, outputs = model(src, lengths, dec, targets)
             else:
                 loss, outputs = model(src, lengths, dec, targets)
-
+            #20220205從這繼續
             pred = outputs.max(2)[1]
             targets = targets.t()
             num_correct = pred.eq(targets).masked_select(targets.ne(utils.PAD)).sum().item()

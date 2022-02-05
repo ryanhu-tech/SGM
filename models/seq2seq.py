@@ -38,22 +38,33 @@ class seq2seq(nn.Module):
             dec: [bs, tgt_len] (bos, x1, ..., xn)
             targets: [bs, tgt_len] (x1, ..., xn, eos)
         """
-
+        #t()的用途?轉成tensor的意思嗎?
         src = src.t()
         dec = dec.t()
         targets = targets.t()
 
+        #src的順序確定是否為[bs, src_len]?
+        #context是公式中的S_0
         contexts, state = self.encoder(src, src_len.tolist())
 
         if self.decoder.attention is not None:
+            #將[max_src_len, batch_size, hidden_size]轉成
+            #[batch_size, max_src_len, hidden_size]
             self.decoder.attention.init_context(context=contexts)
 
         outputs = []
         output = None
 
+        #把dec的每個tgt切分開來，一次進去的是一個batch的同一個time step的文字
+        #這個要確定一下
         for input in dec.split(1):
+            #squeeze(0)，會把第0維壓縮，[1,batch]->[batch]
+            #state([2][num_layers=3, batch, hidden_size])
             output, state, _ = self.decoder(input.squeeze(0), state, output)
+            #output=[batch, hidden_size]
+            #應該是append之後，outputs=[tgt_len, batch, hidden_size]
             outputs.append(output)
+        #outputs=[tgt_len,batch, hidden_size]
         outputs = torch.stack(outputs)
 
         loss = self.compute_loss(outputs, targets)

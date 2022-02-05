@@ -16,6 +16,7 @@ import utils
 
 parser = argparse.ArgumentParser(description='predict.py')
 
+#加入model所需的argument
 opts.model_opts(parser)
 parser.add_argument('-data', type=str, default='./data/save_data/', 
                     help="the processed data dir")
@@ -41,10 +42,11 @@ np.random.seed(opt.seed)
 
 # set cuda
 use_cuda = torch.cuda.is_available() and len(opt.gpus) > 0
-config.use_cuda = use_cuda
+config.use_cuda = use_cuda #為何config可以直接增加一個use_cuda,
 if use_cuda:
     torch.cuda.set_device(opt.gpus[0])
     torch.cuda.manual_seed(opt.seed)
+    #固定cuda的seed，確保輸出一致
     torch.backends.cudnn.deterministic = True
 
 # load label_dict
