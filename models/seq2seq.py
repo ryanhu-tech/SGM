@@ -25,7 +25,9 @@ class seq2seq(nn.Module):
         if config.use_cuda:
             self.criterion.cuda()
 
+    #scores=[tgt_len,batch, tgt_vocab_size, targets=[batch, tgt_len]
     def compute_loss(self, scores, targets):
+        #scores=[tgt_len*batch, tgt_vocab_size]
         scores = scores.view(-1, scores.size(2))
         loss = self.criterion(scores, targets.contiguous().view(-1))
         return loss
@@ -38,12 +40,12 @@ class seq2seq(nn.Module):
             dec: [bs, tgt_len] (bos, x1, ..., xn)
             targets: [bs, tgt_len] (x1, ..., xn, eos)
         """
-        #t()的用途?轉成tensor的意思嗎?
+        #t()的用途是轉置，原本[batch, src_len]->[src_len, batch]
         src = src.t()
         dec = dec.t()
         targets = targets.t()
 
-        #src的順序確定是否為[bs, src_len]?
+        #src的順序確定為[src_len, batch]
         #context是公式中的S_0
         contexts, state = self.encoder(src, src_len.tolist())
 
@@ -56,18 +58,18 @@ class seq2seq(nn.Module):
         output = None
 
         #把dec的每個tgt切分開來，一次進去的是一個batch的同一個time step的文字
-        #這個要確定一下
         for input in dec.split(1):
             #squeeze(0)，會把第0維壓縮，[1,batch]->[batch]
             #state([2][num_layers=3, batch, hidden_size])
             output, state, _ = self.decoder(input.squeeze(0), state, output)
-            #output=[batch, hidden_size]
-            #應該是append之後，outputs=[tgt_len, batch, hidden_size]
+            #output=[batch, tgt_vocab_size]
+            #應該是append之後，outputs=[tgt_len, batch, tgt_vocab_size]
             outputs.append(output)
-        #outputs=[tgt_len,batch, hidden_size]
+        #outputs=[tgt_len,batch, tgt_vocab_size]
         outputs = torch.stack(outputs)
-
+        #targets=[batch, tgt_len]
         loss = self.compute_loss(outputs, targets)
+        #loss = [batch * tgt_len]
         return loss, outputs
 
     def sample(self, src, src_len):
