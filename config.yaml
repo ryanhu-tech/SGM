@@ -27,5 +27,5 @@ shared_vocab: False
 beam_size: 1
 eval_time: 10
 mask: True
-global_emb: False
+global_emb: True
 tau: 0.1
