@@ -4,7 +4,7 @@ def model_opts(parser):
                         help="config file")
     parser.add_argument('-gpus', default=[], nargs='+', type=int,
                         help="use CUDA on the listed devices.")
-    parser.add_argument('-restore', default='./checkpoints/sgmge.pt', type=str,
+    parser.add_argument('-restore', default=None, type=str,
                         help="restore checkpoint")
     parser.add_argument('-seed', default=1234, type=int, 
                         help="random seed")
