@@ -131,7 +131,7 @@ def train_model(model, data, optim, epoch, params):
         #A tuple of (sorted_tensor, sorted_indices) is returned,
         #where the sorted_indices are the indices of the elements in the original input tensor.
         lengths, indices = torch.sort(src_len, dim=0, descending=True)
-        #將src依照句子的長度，由長到短排列，此時src是tensor了嗎?
+        #將src依照句子的長度，由長到短排列，此時src是tensor了
         src = torch.index_select(src, dim=0, index=indices)
         tgt = torch.index_select(tgt, dim=0, index=indices)
         dec = tgt[:, :-1] #捨棄最後一個字，去掉預設的EOS
@@ -146,10 +146,14 @@ def train_model(model, data, optim, epoch, params):
                     loss, outputs = model(src, lengths, dec, targets)
             else:
                 loss, outputs = model(src, lengths, dec, targets)
-            #20220205從這繼續
+            #loss=[batch * tgt_len], output=[tgt_len, batch, tgt_vocab_size]
+            #max(2)[1]，返回第二維，其中最大值的索引
+            #prd=[tgt_len, batch]
             pred = outputs.max(2)[1]
             targets = targets.t()
             num_correct = pred.eq(targets).masked_select(targets.ne(utils.PAD)).sum().item()
+            #torch.ne 返回torch.ByteTensor 張量，與utils.PAD不相等返回true
+            #所以loss只考慮非PAD的字
             num_total = targets.ne(utils.PAD).sum().item()
             if config.max_split == 0:
                 loss = torch.sum(loss) / num_total
