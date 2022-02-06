@@ -11,7 +11,7 @@ class AttrDict(dict):
 
 
 def read_config(path):
-    return AttrDict(yaml.load(open(path, 'r')))
+    return AttrDict(yaml.load(open(path, 'r'), Loader=yaml.FullLoader))
 
 
 def print_log(file):
@@ -22,8 +22,8 @@ def print_log(file):
     return write_log
 
 
-_, term_width = os.popen('stty size', 'r').read().split()
-term_width = int(term_width)
+#_, term_width = os.popen('stty size', 'r').read().split()
+term_width = 80#int(term_width)
 
 TOTAL_BAR_LENGTH = 86.
 last_time = time.time()
